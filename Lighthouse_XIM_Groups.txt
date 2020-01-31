@@ -1,0 +1,27 @@
+[
+    {
+        "groupsInfo": [
+            {
+                "name": "GROUP_ALL", 
+                "number": 10
+            }, 
+            {
+                "name": "LIGHT_PAIR_01", 
+                "number": 1
+            }, 
+            {
+                "name": "LIGHT_PAIR_02", 
+                "number": 2
+            }, 
+            {
+                "name": "LIGHT_PAIR_03", 
+                "number": 3
+            }, 
+            {
+                "name": "LIGHT_PAIR_04", 
+                "number": 4
+            }
+        ], 
+        "name": "Unsecured"
+    }
+]
