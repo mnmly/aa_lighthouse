@@ -4,6 +4,18 @@
 # using the Xicato XIM LED modules
 # 2020-01-31 francesco.anselmo@gmail.com, i.am@mnmly.com
 
+###
+### ## Device ID and Groups
+### The array of LEDs consists of 8 units numbered as ID of [1 - 8].
+### 
+### They are assigned to the following groups:
+### 
+### - `LIGHT_ALL`     (GROUP_ID: 10, all LEDs)
+### - `LIGHT_PAIR_01` (GROUP_ID: 1 containing LED of 1 and 5)
+### - `LIGHT_PAIR_02` (GROUP_ID: 2 containing LED of 2 and 6)
+### - `LIGHT_PAIR_03` (GROUP_ID: 3 containing LED of 3 and 7)
+### - `LIGHT_PAIR_04` (GROUP_ID: 4 containing LED of 4 and 8)
+
 DEFAULT_GROUP = 10
 DEFAULT_FADE_TIME = 2000 # in milliseconds
 OSC_PORT = 5005
@@ -61,10 +73,10 @@ class XIMDimming(Thread):
         self.deviceList = deviceList
         self.group = group
         self.pairedGroups = [
-            2,      # 1, 5,
-            3,      # 2, 6,
-            4,      # 3, 7,
-            5       # 4, 8
+            1,      # 1, 5,
+            2,      # 2, 6,
+            3,      # 3, 7,
+            4       # 4, 8
         ]
 
         # States
