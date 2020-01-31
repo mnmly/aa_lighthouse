@@ -55,9 +55,6 @@ import ble_xim_pkg.bxdevice as ble_device
 import time
 from threading import Thread, Lock
 
-def sortFn(item):
-    return item.deviceId
-
 ### Dimming  thread class
 class XIMDimming(Thread):
     def __init__(self, xim, deviceList, fade_time=DEFAULT_FADE_TIME, parent=None, interval=0.150, group=DEFAULT_GROUP):
@@ -95,7 +92,17 @@ class XIMDimming(Thread):
             self.groupedDeviceList[count % 4].append(key)
             # print(count % 4)
             count = count + 1
+        print(self.orderedDeviceList)
         self.ximNumber = len(self.deviceList)
+
+    def findDeviceById(self, deviceId = -1):
+        key = ble_device.NetDeviceId([0, 0, 0, 0], [deviceId])
+        if key in self.deviceList:
+            print('yay')
+            return self.deviceList[key]
+        else:
+            return None
+        
 
     def run(self):
         if True:
@@ -114,25 +121,29 @@ class XIMDimming(Thread):
                     elif self.breathFading:
                         fading_values = [100,90,60,30,15,10,5,2,1,0]
                         for v in fading_values:
-                            action_set_group(True, self.fade_time, maxIntensity=v, group = self.group)
-                            time.sleep(self.fade_time/1000.0)
-                            if v != 0:
-                                action_set_group(False, self.fade_time, group = self.group)
+                            if self.breathFading:
+                                action_set_group(True, self.fade_time, maxIntensity=v, group = self.group)
                                 time.sleep(self.fade_time/1000.0)
+                                if v != 0:
+                                    action_set_group(False, self.fade_time, group = self.group)
+                                    time.sleep(self.fade_time/1000.0)
                         self.breathFading = False # This sequence should be terminated after completion
                     else:
                         ### State - Rotating: it should be paired in dimming: LED 1/5 LED 2/6 LED 3/7 LED 4/8
+                        rotating_fade_time = self.fade_time * 0.4
+                        fade_time_cache = self.fade_time
+                        self.fade_time = rotating_fade_time
                         for pairGroup in self.pairedGroups:
                             if self.rotating:
-                                print(pairGroup)
-                                # put light to maximum brightness
                                 print('dim on')
-                                action_set_group(True, self.fade_time, group = pairGroup, keepRotation = True)
-                                time.sleep(self.fade_time/1000 + 0.1)
+                                action_set_group(True, rotating_fade_time, group = pairGroup, keepRotation = True)
+                                time.sleep(rotating_fade_time/1000 + 0.1)
                                 # put light to minimum brightness
                                 print('dim off')
-                                action_set_group(False, self.fade_time, group = pairGroup, keepRotation = True)
-                                time.sleep(self.fade_time/1000 + 0.1)
+                                action_set_group(False, rotating_fade_time, group = pairGroup, keepRotation = True)
+                                time.sleep(rotating_fade_time/1000 + 0.1)
+
+                        self.fade_time = fade_time_cache
                         # sleep until next loop is due
                         if self.rotating:
                             self.rotating = False # This sequence should be terminated after the completion
@@ -202,18 +213,14 @@ def action_print_devices():
 def action_set_intensity_for(device_id = -1, intensity = 0):
     print('action: set_intensity_for: device_id: ' + str(device_id) + " with intensity: " + str(intensity))
     # dimming.updateDeviceList()
-    devices = dimming.orderedDeviceList.items()
-    if len(devices) >= device_id:
-        device = dimming.orderedDeviceList.items()[device_id - 1] # orderedList is 0 based index, the LED ID is one based index.
-        # we only want to deal with one device so if our filtered list has more than one member we don't proceed
-        # now we create the values dictionary.
-        # the names and acceptable values of each parameter can be found in the API documentation for each call
-        values = {"light_level":intensity, "fade_time":0, "response_time":0, "override_time":0, "lock_light_control":False}
-        # finally, actually issue the advertising command
-        ble_xim.advLightControl(device[0], values)
-        # time.sleep(0.15)
-    else:
-        print "Error: could not locate device with ID {}".format(device_id)
+
+    for device in dimming.deviceList:
+        if device.deviceId[0] == device_id:
+            values = {"light_level":intensity, "fade_time":0, "response_time":0, "override_time":0, "lock_light_control":False}
+            # finally, actually issue the advertising command
+            ble_xim.advLightControl(device, values)
+            return
+    print "Error: could not locate device with ID {}".format(device_id)
 
 def action_set_group(on = True, interval = 0.15, maxIntensity = 100, group = DEFAULT_GROUP, keepRotation = False):
     """
@@ -408,7 +415,6 @@ if __name__ == '__main__':
                         # but it's simpler to only allow assigned ids
                         # it's also typically more predictable behavior
                         device_id = [int(device_id_raw)]
-                        print(device_id[0])
                         assert 1 <= device_id[0] <= 49151, "Device id should be in the range of 1 - 49151"
                     except:
                         # catch the parsing error
