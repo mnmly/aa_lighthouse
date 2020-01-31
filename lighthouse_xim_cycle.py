@@ -221,7 +221,7 @@ def action_set_group(on = True, interval = 0.15, maxIntensity = 100, group = DEF
     Note that the group numbers in the range 0 - 16535, but when advertising
     to a group, the address is 0xC000 (49152) plus the group number.
     """
-    print('action: set group '+ str(group) +' to ' + ("on" if on else "off"))
+    print('action: set group '+ str(group) +' to ' + ("on" if on else "off") + ' with intensity of ' + str(maxIntensity))
     dimming.rotating = keepRotation
     device_group = ble_device.NetDeviceId([0, 0, 0, 0], [49152+group])
     intensity = maxIntensity if on else 0
