@@ -60,6 +60,12 @@ class XIMDimming(Thread):
         self.allOn = False
         self.deviceList = deviceList
         self.group = group
+        self.pairedGroups = [
+            2,      # 1, 5,
+            3,      # 2, 6,
+            4,      # 3, 7,
+            5       # 4, 8
+        ]
 
         # States
         self.rotating = False
@@ -104,26 +110,15 @@ class XIMDimming(Thread):
                         self.breathFading = False # This sequence should be terminated after completion
                     else:
                         ### State - Rotating: it should be paired in dimming: LED 1/5 LED 2/6 LED 3/7 LED 4/8
-                        for group in self.groupedDeviceList:
+                        for pairGroup in self.pairedGroups:
                             if self.rotating:
-                                # print("XIM: " + str(ximID))
                                 # put light to maximum brightness
-                                # devices = filter(lambda ndi: ndi.deviceId == [ximID], self.deviceList)
-                                # print(devices)
                                 print('dim on')
-                                for device in group:
-                                    intensity = 10
-                                    values = {"light_level":intensity, "fade_time":self.fade_time, "response_time":0, "override_time":0, "lock_light_control":False}
-                                    ble_xim.advLightControl(device, values)
-                                    time.sleep(0.15)
+                                action_set_group(True, self.fade_time, group = pairGroup)
                                 time.sleep(self.fade_time/1000 + 0.1)
                                 # put light to minimum brightness
                                 print('dim off')
-                                for device in group:
-                                    intensity = 0
-                                    values = {"light_level":intensity, "fade_time":self.fade_time, "response_time":0, "override_time":0, "lock_light_control":False}
-                                    ble_xim.advLightControl(device, values)
-                                    time.sleep(0.15)
+                                action_set_group(False, self.fade_time, group = pairGroup)
                                 time.sleep(self.fade_time/1000 + 0.1)
                         # sleep until next loop is due
                         if self.rotating:
@@ -220,19 +215,6 @@ def action_set_group(on = True, interval = 0.15, maxIntensity = 100, group = DEF
     values = {"light_level":intensity, "fade_time":dimming.fade_time, "response_time":0, "override_time":0, "lock_light_control":False}
     ble_xim.advLightControl(device_group, values)
 
-
-# all lights on / off
-def action_set_all(on = True, interval = 0.15, maxIntensity = 100):
-    print('action: set all to ' + ("on" if on else "off"))
-    dimming.rotating = False
-    intensity = maxIntensity if on else 0
-    for device in dimming.deviceList:
-        # put light to maximum brightness
-        intensity = maxIntensity if on else 0
-        values = {"light_level":intensity, "fade_time":dimming.fade_time, "response_time":0, "override_time":0, "lock_light_control":False}
-        ble_xim.advLightControl(device, values)
-        time.sleep(interval)
-
 # dynamic dimming rotation
 def action_dim_rotation(on = True):
     print('action: set dimming rotation:  ' + ("on" if on else "off"))
@@ -279,7 +261,6 @@ def fader_callback(path, tags, args, source):
 
 def set_all_callback(path, tags, args, source):
     num = map(int, re.findall('\d', path.split('/')[-1]))[0]
-    # action_set_all(True if num == 1 else False)
     action_set_group(True if num == 1 else False)
 
 def dim_rotation_callback(path, tags, args, source):
@@ -441,11 +422,9 @@ if __name__ == '__main__':
                 action_dim_rotation(False)
             # all lights on to maximum
             elif choice == 'a':
-                # action_set_all(True)
                 action_set_group(True, group = dimming.group)
             # all lights off
             elif choice == 'o':
-                # action_set_all(False)
                 action_set_group(False, group = dimming.group)
             elif choice == '?':
                 f1 = Figlet(font='script')
