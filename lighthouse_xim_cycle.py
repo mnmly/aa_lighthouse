@@ -124,13 +124,14 @@ class XIMDimming(Thread):
                         ### State - Rotating: it should be paired in dimming: LED 1/5 LED 2/6 LED 3/7 LED 4/8
                         for pairGroup in self.pairedGroups:
                             if self.rotating:
+                                print(pairGroup)
                                 # put light to maximum brightness
                                 print('dim on')
-                                action_set_group(True, self.fade_time, group = pairGroup)
+                                action_set_group(True, self.fade_time, group = pairGroup, keepRotation = True)
                                 time.sleep(self.fade_time/1000 + 0.1)
                                 # put light to minimum brightness
                                 print('dim off')
-                                action_set_group(False, self.fade_time, group = pairGroup)
+                                action_set_group(False, self.fade_time, group = pairGroup, keepRotation = True)
                                 time.sleep(self.fade_time/1000 + 0.1)
                         # sleep until next loop is due
                         if self.rotating:
@@ -214,14 +215,14 @@ def action_set_intensity_for(device_id = -1, intensity = 0):
     else:
         print "Error: could not locate device with ID {}".format(device_id)
 
-def action_set_group(on = True, interval = 0.15, maxIntensity = 100, group = DEFAULT_GROUP):
+def action_set_group(on = True, interval = 0.15, maxIntensity = 100, group = DEFAULT_GROUP, keepRotation = False):
     """
     Set a group of LEDs on, off or to a specific intensity.
     Note that the group numbers in the range 0 - 16535, but when advertising
     to a group, the address is 0xC000 (49152) plus the group number.
     """
     print('action: set group '+ str(group) +' to ' + ("on" if on else "off"))
-    dimming.rotating = False
+    dimming.rotating = keepRotation
     device_group = ble_device.NetDeviceId([0, 0, 0, 0], [49152+group])
     intensity = maxIntensity if on else 0
     values = {"light_level":intensity, "fade_time":dimming.fade_time, "response_time":0, "override_time":0, "lock_light_control":False}
